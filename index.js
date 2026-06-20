@@ -24,7 +24,8 @@ app.command("/verstappen-help", async ({ ack, respond }) => {
 /verstappen-ping - Check bot latency
 /verstappen-quote - Get a quote from the dutchman himself
 /verstappen-info - Info on the GOAT
-/verstappen-joke - Jokes`
+/verstappen-joke - Jokes
+/verstappen-season [Year] - type any year from 2015 to 2025 to get seasonal stats on every season from Verstappen`
   });
 });
 
@@ -87,6 +88,49 @@ app.command("/verstappen-joke", async ({ ack, respond }) => {
             });
     }  catch (err) {
         await respond({ text: "Failed to fetch a joke." });
+    }
+});
+
+app.command("/verstappen-season", async ({ ack, respond, command }) => {
+    await ack();
+
+    const year = command.text.trim();
+    const validyears = ["2015","2016","2017","2018","2019","2020","2021","2022","2023","2024","2025"]
+
+    if (!validyears.includes(year)) {
+        await respond({ text: `Please enter a valid year from 2015 to 2025`})
+        return;
+    }
+
+    try {
+        const [standingsRes, resultsRes] = await Promise.all([
+            axios.get(`https://api.jolpi.ca/ergast/f1/${year}/drivers/max_verstappen/driverStandings.json`, { timeout: 5000 }),
+            axios.get(`https://api.jolpi.ca/ergast/f1/${year}/drivers/max_verstappen/driverStandings.json`, { timeout: 5000 })
+        ]);
+
+        const standingsList = standingsRes.data?.MRData?.StandingsTable?.StandingsLists?.[0];
+        const standing = standingsList?.DriverStandings?.[0];
+        const races = resultsRes.data?.MRData?.RaceTable?.Races ?? [];
+
+        if (!standing) {
+            await respond({ text: `No data found for ${year}` });
+            return;
+        }
+
+        const wins = races.filter(r => r.Results?.[0]?.position === "1").length;
+        const podiums = races.filter(r => ["1","2","3"].includes(r.Results?.[0]?.position)).length;
+        const points = standing.points;
+        const position = standing.position;
+        const team = standing.Constructors?.[0]?.name ?? "Unknwon";
+        const totalRaces = races.length;
+        const dnfs = races.filter(r => r.Results?.[0]?.status && !r.Results[0].status.includes("Lap") && r.Results[0].status !== "Finished").length;
+    
+        await respond({
+            text: `Max Verstappen = ${year} Season\nTeam: ${team}\nChampionship Position: P${position}\nPoints: ${points}\nRaces: ${totalRaces}\nWins: ${wins}\nPodiums: ${podiums}\nDNFs: ${dnfs}`
+        });
+    } catch (err) {
+        console.error("api error", err.message);
+        await respond({ text: "No data found"});
     }
 });
 
