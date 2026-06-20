@@ -105,7 +105,7 @@ app.command("/verstappen-season", async ({ ack, respond, command }) => {
     try {
         const [standingsRes, resultsRes] = await Promise.all([
             axios.get(`https://api.jolpi.ca/ergast/f1/${year}/drivers/max_verstappen/driverStandings.json`, { timeout: 5000 }),
-            axios.get(`https://api.jolpi.ca/ergast/f1/${year}/drivers/max_verstappen/driverStandings.json`, { timeout: 5000 })
+            axios.get(`https://api.jolpi.ca/ergast/f1/${year}/drivers/max_verstappen/results.json?limit=30`, { timeout: 5000 })
         ]);
 
         const standingsList = standingsRes.data?.MRData?.StandingsTable?.StandingsLists?.[0];
